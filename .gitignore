@@ -1,0 +1,42 @@
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.bpmn/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Mac
+.DS_Store
+
+# Maven
+log/
+target/
+
+!.mvn/wrapper/maven-wrapper.jar
+
+# Logging
+*.log
+
+# bpmn
+.bpmn/
+
+# sts4
+.sts4-cache/
+
