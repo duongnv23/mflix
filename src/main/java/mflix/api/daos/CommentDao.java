@@ -5,6 +5,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import mflix.api.models.Comment;
 import mflix.api.models.Critic;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,12 +123,18 @@ public class CommentDao extends AbstractMFlixDao {
      * @return true if successful deletes the comment.
      */
     public boolean deleteComment(String commentId, String email) {
-        // TODO> Ticket Delete Comments - Implement the method that enables the deletion of a user
-        // comment
-        // TIP: make sure to match only users that own the given commentId
-        // TODO> Ticket Handling Errors - Implement a try catch block to
-        // handle a potential write exception when given a wrong commentId.
-        return false;
+        if (StringUtils.isEmpty(commentId)) {
+            throw new IllegalArgumentException("comment Id must be not empty");
+        }
+        try {
+            DeleteResult result = commentCollection.deleteMany(Filters.and(Filters.eq("_id", new ObjectId(commentId)), Filters.eq("email", email)));
+            if (result.getDeletedCount() > 0) {
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            throw new IncorrectDaoOperation("delete comment " + commentId + " of user " + email + " error", e);
+        }
     }
 
     /**
