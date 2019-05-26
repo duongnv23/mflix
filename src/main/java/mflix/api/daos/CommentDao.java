@@ -1,6 +1,8 @@
 package mflix.api.daos;
 
 import com.mongodb.MongoClientSettings;
+import com.mongodb.ReadConcern;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
@@ -12,6 +14,7 @@ import mflix.api.models.Critic;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +24,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import static com.mongodb.client.model.Aggregates.limit;
+import static com.mongodb.client.model.Aggregates.sortByCount;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
@@ -79,7 +85,7 @@ public class CommentDao extends AbstractMFlixDao {
             throw new IncorrectDaoOperation("movie id must set");
         }
         try {
-            commentCollection.insertOne(comment);
+            commentCollection.withWriteConcern(WriteConcern.MAJORITY).insertOne(comment);
         } catch (Exception e) {
             throw new IncorrectDaoOperation("add comment error", e);
         }
@@ -102,7 +108,7 @@ public class CommentDao extends AbstractMFlixDao {
     public boolean updateComment(String commentId, String text, String email) {
 
         try {
-            UpdateResult result = commentCollection.updateOne(
+            UpdateResult result = commentCollection.withWriteConcern(WriteConcern.MAJORITY).updateOne(
                     Filters.and(Filters.eq("_id", new ObjectId(commentId)), Filters.eq("email", email)),
                     Updates.combine(Updates.set("text", text), Updates.currentDate("date")));
 
@@ -127,7 +133,7 @@ public class CommentDao extends AbstractMFlixDao {
             throw new IllegalArgumentException("comment Id must be not empty");
         }
         try {
-            DeleteResult result = commentCollection.deleteMany(Filters.and(Filters.eq("_id", new ObjectId(commentId)), Filters.eq("email", email)));
+            DeleteResult result = commentCollection.withWriteConcern(WriteConcern.MAJORITY).deleteMany(Filters.and(Filters.eq("_id", new ObjectId(commentId)), Filters.eq("email", email)));
             if (result.getDeletedCount() > 0) {
                 return true;
             }
@@ -146,12 +152,8 @@ public class CommentDao extends AbstractMFlixDao {
      */
     public List<Critic> mostActiveCommenters() {
         List<Critic> mostActive = new ArrayList<>();
-        // // TODO> Ticket: User Report - execute a command that returns the
-        // // list of 20 users, group by number of comments. Don't forget,
-        // // this report is expected to be produced with an high durability
-        // // guarantee for the returned documents. Once a commenter is in the
-        // // top 20 of users, they become a Critic, so mostActive is composed of
-        // // Critic objects.
+        List<Bson> pipeline = Arrays.asList(sortByCount("$email"), limit(20));
+        commentCollection.withReadConcern(ReadConcern.MAJORITY).aggregate(pipeline, Critic.class).iterator().forEachRemaining(mostActive::add);
         return mostActive;
     }
 }

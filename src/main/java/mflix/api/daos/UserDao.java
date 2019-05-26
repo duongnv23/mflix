@@ -1,10 +1,10 @@
 package mflix.api.daos;
 
 import com.mongodb.MongoClientSettings;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.InsertOneOptions;
 import mflix.api.models.Session;
 import mflix.api.models.User;
 import org.bson.Document;
@@ -52,13 +52,8 @@ public class UserDao extends AbstractMFlixDao {
      */
     public boolean addUser(User user) {
         try {
-            //TODO > Ticket: Durable Writes -  you might want to use a more durable write concern here!
-            InsertOneOptions options = new InsertOneOptions();
-
-            usersCollection.insertOne(user);
+            usersCollection.withWriteConcern(WriteConcern.MAJORITY).insertOne(user);
             return true;
-            //TODO > Ticket: Handling Errors - make sure to only add new users
-            // and not users that already exist.
         } catch (Exception e) {
             throw new IncorrectDaoOperation("insert error has error: " + e.getMessage(), e);
         }
@@ -80,7 +75,7 @@ public class UserDao extends AbstractMFlixDao {
             userSession.setUserId(userId);
             userSession.setJwt(jwt);
 
-            sessionsCollection.insertOne(userSession);
+            sessionsCollection.withWriteConcern(WriteConcern.MAJORITY).insertOne(userSession);
         }
         return true;
 
@@ -126,7 +121,7 @@ public class UserDao extends AbstractMFlixDao {
             }
 
             deleteUserSessions(email);
-            usersCollection.deleteOne(Filters.eq("email", email));
+            usersCollection.withWriteConcern(WriteConcern.MAJORITY).deleteOne(Filters.eq("email", email));
 
             return true;
         } catch (Exception e) {
