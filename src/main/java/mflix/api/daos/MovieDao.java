@@ -43,10 +43,11 @@ public class MovieDao extends AbstractMFlixDao {
      * @return true if valid movieId.
      */
     private boolean validIdValue(String movieId) {
-        //TODO> Ticket: Handling Errors - implement a way to catch a
-        //any potential exceptions thrown while validating a movie id.
-        //Check out this method's use in the method that follows.
-        return true;
+        if (movieId == null) {
+            return false;
+        }
+
+        return ObjectId.isValid(movieId);
     }
 
     /**

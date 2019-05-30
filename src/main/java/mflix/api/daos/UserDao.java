@@ -68,17 +68,19 @@ public class UserDao extends AbstractMFlixDao {
      */
     public boolean createUserSession(String userId, String jwt) {
 
-        Session userSession = sessionsCollection.find(Filters.eq("user_id", userId)).first();
+        try {
+            Session userSession = sessionsCollection.find(Filters.eq("user_id", userId)).first();
+            if (userSession == null) {
+                userSession = new Session();
+                userSession.setUserId(userId);
+                userSession.setJwt(jwt);
 
-        if (userSession == null) {
-            userSession = new Session();
-            userSession.setUserId(userId);
-            userSession.setJwt(jwt);
-
-            sessionsCollection.withWriteConcern(WriteConcern.MAJORITY).insertOne(userSession);
+                sessionsCollection.withWriteConcern(WriteConcern.MAJORITY).insertOne(userSession);
+            }
+            return true;
+        } catch (Exception e) {
+            throw new IncorrectDaoOperation("create user has error " + e);
         }
-        return true;
-
     }
 
     /**
